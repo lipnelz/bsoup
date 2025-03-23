@@ -100,8 +100,8 @@ def process_url_data(url_to_scrape: list, local: bool) -> None:
                 daily_indice = soup.find("span", {"class": "c-instrument c-instrument--last"}).text.strip()
                 current_indice_name = next((name for name in indice_names if name.lower() in soup.find("div", {"class": "u-text-bold"}).text.strip().lower()), "")
 
-                # Format the CSV string
-                csv_string = f"{current_indice_name};{daily_indice.replace('.',',')};{date_minimum};{str(minimum_indice).replace('.',',')};{date_maximum};{str(maximum_indice).replace('.',',')}"
+                # Format the CSV string with three decimal places
+                csv_string = f"{current_indice_name};{format(float(daily_indice.replace(',', '.')), '.3f').replace('.',',')};{date_minimum};{format(minimum_indice, '.3f').replace('.',',')};{date_maximum};{format(maximum_indice, '.3f').replace('.',',')}"
                 print(csv_string)
                 f.write(csv_string + "\n")
 
