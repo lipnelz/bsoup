@@ -8,6 +8,7 @@ This Python script fetches data from a list of URLs and saves the data to a CSV 
 - `requests` library
 - `beautifulsoup4` library
 - `argparse` library (included in the Python standard library)
+- `aiohttp` library
 
 ## Installation
 
@@ -19,8 +20,10 @@ This Python script fetches data from a list of URLs and saves the data to a CSV 
 Create a urls.json file in the same directory as the script. The file should contain a list of URLs and their corresponding names in the following format:
 json
 [
-    ["https://www.example.com/url1", "Name1"],
-    ["https://www.example.com/url2", "Name2"],
+    ["https://www.example.com/url1", "Name1", 1],
+    ["https://www.example.com/url2", "Name2"], 1,
+    ...
+    ["https://www.example.com/urln", "NameN"], 0,
     ...
 ]
 
@@ -30,8 +33,11 @@ The URLs format must be  https://www.boursorama.com/cours/historique/<id> where 
 
 By default, the CSV file will be created on the desktop. To create the CSV file in the same directory as the script, use the -l or --local argument:
 
-sh
-python bsoup.py -l
+>$ python bsoup.py -l
+
+To pass a specific .json file you can use -f or --file argument:
+
+>$ python bsoup.py -f my_file.json
 
 ## Output
 
