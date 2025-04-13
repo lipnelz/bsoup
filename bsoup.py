@@ -13,7 +13,7 @@ semaphore = asyncio.Semaphore(20)
 
 async def fetch_html_with_limit(session: aiohttp.ClientSession, url: str) -> str:
     """
-    Fetch the HTML document from the given URL asynchronously, 
+    Fetch the HTML document from the given URL asynchronously,
     respecting a limit on the number of simultaneous connections.
 
     Args:
@@ -21,7 +21,7 @@ async def fetch_html_with_limit(session: aiohttp.ClientSession, url: str) -> str
         url (str): The URL to fetch.
 
     Returns:
-        str: The HTML document as a string if the request is successful, 
+        str: The HTML document as a string if the request is successful,
              or an empty string if the request fails.
     """
     async with semaphore: # Limit the number of simultaneous connections
@@ -108,8 +108,10 @@ async def process_url_data(url_to_scrape: list, local: bool) -> None:
     Returns:
         None
     """
-    urls = [url[0] for url in url_to_scrape]
-    indice_names = [ind[1] for ind in url_to_scrape]
+    filtered_data = [item for item in url_to_scrape if item[2] == 1]
+    urls = [url[0] for url in filtered_data]
+    indice_names = [ind[1] for ind in filtered_data]
+
 
     output_path = os.path.dirname(os.path.abspath(__file__)) if local else os.path.join(os.environ['USERPROFILE'], 'Desktop')
     if not os.path.exists(output_path):
@@ -127,6 +129,7 @@ async def process_url_data(url_to_scrape: list, local: bool) -> None:
 
         results = []
         for html, indice_name in zip(html_documents, indice_names):
+            print(f"Processing {indice_name} ...")
             if html:
                 csv_string = await parse_page(html, indice_name)
                 results.append(csv_string)
@@ -155,8 +158,8 @@ if __name__ == "__main__":
         print("Error decoding the JSON file.")
         exit(1)
 
-    if not isinstance(urls_list, list) or not all(len(item) == 2 for item in urls_list):
-        print("Invalid JSON format. Expected a list of [URL, indice_name].")
+    if not isinstance(urls_list, list) or not all(len(item) == 3 for item in urls_list):
+        print("Invalid JSON format. Expected a list of [URL, indice_name, is_enabled].")
         exit(1)
 
     start_time = time.time()
