@@ -112,7 +112,6 @@ async def process_url_data(url_to_scrape: list, local: bool) -> None:
     urls = [url[0] for url in filtered_data]
     indice_names = [ind[1] for ind in filtered_data]
 
-
     output_path = os.path.dirname(os.path.abspath(__file__)) if local else os.path.join(os.environ['USERPROFILE'], 'Desktop')
     if not os.path.exists(output_path):
         os.makedirs(output_path)
@@ -145,17 +144,18 @@ if __name__ == "__main__":
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description="Fetch data from URLs and save to a CSV file.")
     parser.add_argument('-l', '--local', action='store_true', help="Create the CSV file in the local directory instead of the desktop.")
+    parser.add_argument('-f', '--file', type=str, default='urls.json', help="JSON file to use (default: urls.json)")
     args = parser.parse_args()
 
     try:
         # Open 'urls.json' file
-        with open('urls.json', 'r', encoding='utf-8') as file:
+        with open(args.file, 'r', encoding='utf-8') as file:
             urls_list = json.load(file)
     except FileNotFoundError:
         print("The file 'urls.json' was not found.")
         exit(1)
     except json.JSONDecodeError:
-        print("Error decoding the JSON file.")
+        print(f"Error decoding the JSON file '{args.file}'.")
         exit(1)
 
     if not isinstance(urls_list, list) or not all(len(item) == 3 for item in urls_list):
