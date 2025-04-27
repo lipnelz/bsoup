@@ -91,10 +91,10 @@ async def parse_page(html: str, indice_name: str) -> str:
 
     return (f"{indice_name};"
             f"{format(daily_indice, '.3f').replace('.',',')};"
-            f"{date_minimum};"
-            f"{format(minimum_indice, '.3f').replace('.',',')};"
             f"{date_maximum};"
-            f"{format(maximum_indice, '.3f').replace('.',',')}")
+            f"{format(maximum_indice, '.3f').replace('.',',')};"
+            f"{date_minimum};"
+            f"{format(minimum_indice, '.3f').replace('.',',')};")
 
 
 async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> None:
@@ -135,7 +135,7 @@ async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> N
                 results.append(csv_string)
 
         with open(file_path, 'w', encoding='utf-8') as f:
-            f.write("Indice;Cours;Date with min;Min;Date with max;Max\n")
+            f.write("Indice;Cours;Date with max;Max;Date with min;Min\n")
             for result in results:
                 if result:
                     print(result)
