@@ -97,7 +97,7 @@ async def parse_page(html: str, indice_name: str) -> str:
             f"{format(maximum_indice, '.3f').replace('.',',')}")
 
 
-async def process_url_data(url_to_scrape: list, local: bool) -> None:
+async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> None:
     """
     Fetch data from the URLs asynchronously and write to a CSV file.
 
@@ -116,7 +116,8 @@ async def process_url_data(url_to_scrape: list, local: bool) -> None:
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
-    file_path = f'{output_path}/indices_{datetime.today().strftime("%Y%m%d_%H%M")}.csv'
+    suffix = filename.replace('.json', '')
+    file_path = f'{output_path}/indices_{datetime.today().strftime("%Y%m%d_%H%M")}_{suffix}.csv'
     print("File created here: ", file_path, " \n")
 
     async with aiohttp.ClientSession() as session:
@@ -163,6 +164,6 @@ if __name__ == "__main__":
         exit(1)
 
     start_time = time.time()
-    asyncio.run(process_url_data(urls_list, args.local))
+    asyncio.run(process_url_data(urls_list, args.local, args.file))
     end_time = time.time()
     print(f"\nDuration: {end_time - start_time:.2f} sec")
