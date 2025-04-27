@@ -60,28 +60,29 @@ async def parse_page(html: str, indice_name: str) -> str:
         str: Formatted CSV string with extracted data.
     """
     soup = BeautifulSoup(html, 'html.parser')
-    date_maximum = date_minimum = ""
-    minimum_indice = float('inf')
-    maximum_indice = float('-inf')
+    min_value = float('inf')
+    max_value = float('-inf')
+    min_date = None
+    max_date = None
 
-    for tableclass in soup.find_all("tr", {"class": "c-table__row"}):
-        date_cell = tableclass.find("td", {"class": "c-table__cell c-table__cell--dotted"})
-        price_cell = tableclass.find("td", {"class": "c-table__cell c-table__cell--dotted c-table__cell--neutral"})
-
-        if date_cell and price_cell:
-            date = date_cell.get_text().strip()
-            price = price_cell.get_text().strip()
-            try:
-                fval = float(price.replace(',', '.').replace('%', '').replace(' ', ''))
-            except ValueError:
-                print(f"Invalid price value: {price}")
-                continue
-            if fval > maximum_indice:
-                maximum_indice = fval
-                date_maximum = date
-            if 0 < fval < minimum_indice:
-                minimum_indice = fval
-                date_minimum = date
+    for row in soup.find_all("tr", class_="c-table__row"):
+        cells = row.find_all("td")
+        if len(cells) >= 6:  # Check there is at least 6 cells
+            date = cells[0].get_text(strip=True)
+            for cell in cells[1:]:  # Ignore the first cell (date)
+                cell_text = cell.get_text(strip=True)
+                if '%' in cell_text:
+                    continue  # Ignore percentage cells (%)
+                try:
+                    value = float(cell_text.replace(',', '.'))
+                    if value < min_value:
+                        min_value = value
+                        min_date = date
+                    if value > max_value:
+                        max_value = value
+                        max_date = date
+                except ValueError:
+                    continue  # Ignore non-numeric values
 
     try:
         daily_indice = float(soup.find("span", {"class": "c-instrument c-instrument--last"}).text.strip().replace(',', '.'))
@@ -91,10 +92,10 @@ async def parse_page(html: str, indice_name: str) -> str:
 
     return (f"{indice_name};"
             f"{format(daily_indice, '.3f').replace('.',',')};"
-            f"{date_maximum};"
-            f"{format(maximum_indice, '.3f').replace('.',',')};"
-            f"{date_minimum};"
-            f"{format(minimum_indice, '.3f').replace('.',',')};")
+            f"{max_date};"
+            f"{format(max_value, '.3f').replace('.',',')};"
+            f"{min_date};"
+            f"{format(min_value, '.3f').replace('.',',')};")
 
 
 async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> None:
