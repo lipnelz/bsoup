@@ -39,6 +39,10 @@ To pass a specific .json file you can use -f or --file argument:
 
 >$ python bsoup.py -f my_file.json
 
+or
+
+>$ python3 bsoup.py -l -f urls.json
+
 ## Output
 
 The script will create a CSV file named indices_YYYYMMDD_HHMM.csv (where YYYYMMDD_HHMM is the current date and time) with the following columns:
