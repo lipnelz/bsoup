@@ -84,6 +84,14 @@ async def parse_page(html: str, indice_name: str) -> str:
                 except ValueError:
                     continue  # Ignore non-numeric values
 
+    # Guard against not-found min/max values
+    if min_value == float('inf'):
+        min_value = 0.0
+        min_date = ''
+    if max_value == float('-inf'):
+        max_value = 0.0
+        max_date = ''
+
     try:
         daily_indice = float(soup.find("span", {"class": "c-instrument c-instrument--last"}).text.strip().replace(',', '.'))
     except (AttributeError, ValueError):
@@ -143,12 +151,22 @@ async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> N
     file_path = f'{output_path}/indices_{datetime.today().strftime("%Y%m%d_%H%M")}_{suffix}.csv'
     print("File created here: ", file_path, " \n")
 
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_html_with_limit(session, url) for url in urls]
-        try:
-            html_documents = await asyncio.wait_for(asyncio.gather(*tasks), timeout=60)
-        except asyncio.TimeoutError:
-            print("Timeout: Some requests took too long to complete.")
+    # Use a client timeout and a simple User-Agent header
+    client_timeout = aiohttp.ClientTimeout(total=30)
+    async with aiohttp.ClientSession(timeout=client_timeout, headers={'User-Agent': 'bsoup/1.0'}) as session:
+        # create tasks so we can detect which completed within the overall timeout
+        tasks = [asyncio.create_task(fetch_html_with_limit(session, url)) for url in urls]
+        done, pending = await asyncio.wait(tasks, timeout=60)
+        for p in pending:
+            p.cancel()
+        # preserve original ordering; fill missing results with empty strings
+        html_documents = [''] * len(tasks)
+        for i, task in enumerate(tasks):
+            if task in done and not task.cancelled():
+                try:
+                    html_documents[i] = task.result()
+                except Exception:
+                    html_documents[i] = ''
 
         results = []
         for html, indice_name in zip(html_documents, indice_names):
