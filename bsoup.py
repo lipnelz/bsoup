@@ -113,7 +113,29 @@ async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> N
     urls = [url[0] for url in filtered_data]
     indice_names = [ind[1] for ind in filtered_data]
 
-    output_path = os.path.dirname(os.path.abspath(__file__)) if local else os.path.join(os.environ['USERPROFILE'], 'Desktop')
+    if local:
+        output_path = os.path.dirname(os.path.abspath(__file__))
+    else:
+        home = os.path.expanduser('~')
+        desktop = None
+        if os.name == 'nt':
+            desktop = os.path.join(os.environ.get('USERPROFILE', home), 'Desktop')
+        else:
+            # Try XDG user-dirs config for localized Desktop path
+            try:
+                cfg = os.path.join(home, '.config', 'user-dirs.dirs')
+                with open(cfg, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.startswith('XDG_DESKTOP_DIR'):
+                            path = line.split('=', 1)[1].strip().strip('"')
+                            desktop = path.replace('$HOME', home)
+                            break
+            except Exception:
+                pass
+            if not desktop:
+                desktop = os.path.join(home, 'Desktop')
+        output_path = desktop if os.path.exists(desktop) else home
+
     if not os.path.exists(output_path):
         os.makedirs(output_path)
 
