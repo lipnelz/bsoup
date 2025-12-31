@@ -7,6 +7,8 @@ import aiohttp
 from bs4 import BeautifulSoup
 from datetime import datetime
 
+# Application version
+VERSION = "1.0"
 
 # Limit to 20 simultaneous connexions
 semaphore = asyncio.Semaphore(20)
@@ -48,7 +50,7 @@ async def fetch_html(session: aiohttp.ClientSession, url: str, retries: int = 3)
             await asyncio.sleep(1)  # Wait before retry
     return ""
 
-async def parse_page(html: str, indice_name: str) -> str:
+async def parse_page(html: str, indice_name: str, decimal_sep: str = '.') -> str:
     """
     Parse the HTML document and extract relevant data.
 
@@ -98,15 +100,21 @@ async def parse_page(html: str, indice_name: str) -> str:
         print("Error extracting daily index value.")
         daily_indice = 0.0
 
+    def _fmt(value: float) -> str:
+        s = format(value, '.3f')
+        if decimal_sep == ',':
+            s = s.replace('.', ',')
+        return s
+
     return (f"{indice_name};"
-            f"{format(daily_indice, '.3f').replace('.',',')};"
+            f"{_fmt(daily_indice)};"
             f"{max_date};"
-            f"{format(max_value, '.3f').replace('.',',')};"
+            f"{_fmt(max_value)};"
             f"{min_date};"
-            f"{format(min_value, '.3f').replace('.',',')};")
+            f"{_fmt(min_value)};")
 
 
-async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> None:
+async def process_url_data(url_to_scrape: list, local: bool, filename: str, decimal_sep: str = '.') -> None:
     """
     Fetch data from the URLs asynchronously and write to a CSV file.
 
@@ -153,7 +161,7 @@ async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> N
 
     # Use a client timeout and a simple User-Agent header
     client_timeout = aiohttp.ClientTimeout(total=30)
-    async with aiohttp.ClientSession(timeout=client_timeout, headers={'User-Agent': 'bsoup/1.0'}) as session:
+    async with aiohttp.ClientSession(timeout=client_timeout, headers={'User-Agent': f'bsoup/{VERSION}'}) as session:
         # create tasks so we can detect which completed within the overall timeout
         tasks = [asyncio.create_task(fetch_html_with_limit(session, url)) for url in urls]
         done, pending = await asyncio.wait(tasks, timeout=60)
@@ -172,7 +180,7 @@ async def process_url_data(url_to_scrape: list, local: bool, filename: str) -> N
         for html, indice_name in zip(html_documents, indice_names):
             print(f"Processing {indice_name} ...")
             if html:
-                csv_string = await parse_page(html, indice_name)
+                csv_string = await parse_page(html, indice_name, decimal_sep)
                 results.append(csv_string)
 
         with open(file_path, 'w', encoding='utf-8') as f:
@@ -187,6 +195,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch data from URLs and save to a CSV file.")
     parser.add_argument('-l', '--local', action='store_true', help="Create the CSV file in the local directory instead of the desktop.")
     parser.add_argument('-f', '--file', type=str, default='urls.json', help="JSON file to use (default: urls.json)")
+    parser.add_argument('-v', '--version', action='version', version=f'bsoup {VERSION}')
+    parser.add_argument('-s', '--sep', choices=['.', ','], default='.', help="Decimal separator for CSV values (default: '.')")
     args = parser.parse_args()
 
     try:
@@ -205,6 +215,6 @@ if __name__ == "__main__":
         exit(1)
 
     start_time = time.time()
-    asyncio.run(process_url_data(urls_list, args.local, args.file))
+    asyncio.run(process_url_data(urls_list, args.local, args.file, args.sep))
     end_time = time.time()
     print(f"\nDuration: {end_time - start_time:.2f} sec")
